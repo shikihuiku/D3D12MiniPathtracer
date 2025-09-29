@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+---
+
+Visual Studio 2022を使用したC++言語を用いたプロジェクト。
+APIはWindowsのDirect3D12を使用する。
+
+- 変数名は camelCaseで記述
+- 関数名は PascalCaseで記述
+- クラス名は PascalCaseで記述
+- インデントは、space4つを使う
+- namespace名は小文字のsnake_caseで記述
+- 定数名は UPPER_SNAKE_CASEで記述
+- ファイル名は PascalCase.cpp/PascalCase.h の形式
+- SALは付けない
+- プログラムコード内のコメントは全て英語で記述する
+- 付帯するドキュメント(README.md等)は日本語で記述する
+- 外部ライブラリはImGUIを使用する
+- 外部ライブラリはthirdpartyディレクトリ以下に配置する。
+- ヘッダーファイルには必ず#pragma onceを使用
+- Direct3D12のCOMオブジェクトはComPtrで管理する
+- HRESULTのチェックにはThrowIfFailedマクロを使用
+- シェーダーファイルは shaders/ ディレクトリに配置
+- リソースファイルは assets/ ディレクトリに配置
+- C++20以降の機能を積極的に使用
+- スマートポインタを優先使用（生ポインタは避ける）
+- エラーハンドリングは例外を使用しない
+- Dxという表記は使わない。代わりにD3D12と表記する。

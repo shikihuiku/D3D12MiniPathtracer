@@ -1,0 +1,57 @@
+﻿{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Debug Build",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "powershell.exe",
+            "runtimeArgs": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/build.ps1",
+                "-Configuration", "Debug",
+                "-Run"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": ""
+        },
+        {
+            "name": "Run Release Build",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "powershell.exe",
+            "runtimeArgs": [
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "${workspaceFolder}/build.ps1",
+                "-Configuration", "Release",
+                "-Run"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": ""
+        },
+        {
+            "name": "Run Debug (Direct)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "${workspaceFolder}/bin/Debug/D3D12MiniPathtracer.exe",
+            "runtimeArgs": [],
+            "console": "externalTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Run Release (Direct)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "${workspaceFolder}/bin/Release/D3D12MiniPathtracer.exe",
+            "runtimeArgs": [],
+            "console": "externalTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build Release"
+        }
+    ]
+}
