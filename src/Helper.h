@@ -27,3 +27,16 @@ inline std::wstring HrToString(HRESULT hr)
         ExitProcess(1);                                                \
     }                                                                  \
 }
+
+
+// Helper function to align size to given alignment
+inline uint32_t AlignSize(uint32_t size, uint32_t alignment)
+{
+    return (size + alignment - 1) & ~(alignment - 1);
+}
+
+// Helper function to align size to given alignment (64-bit version)
+inline uint64_t AlignSize(uint64_t size, uint64_t alignment)
+{
+    return (size + alignment - 1) & ~(alignment - 1);
+}

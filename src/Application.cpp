@@ -1,6 +1,8 @@
 #include "Application.h"
 #include "Helper.h"
 #include "ImGuiManager.h"
+#include "Scene.h"
+#include "Raytracing.h"
 #include <cmath>
 #include <algorithm>
 #include <imgui.h>
@@ -27,7 +29,10 @@ Application::Application(uint32_t width, uint32_t height, const std::wstring& na
     m_viewport{},
     m_scissorRect{},
     m_frameCounter(0),
-    m_imguiManager(std::make_unique<ImGuiManager>())
+    m_imguiManager(std::make_unique<ImGuiManager>()),
+    m_scene(std::make_unique<Scene>()),
+    m_raytracing(std::make_unique<Raytracing>()),
+    m_isDxrSupported(false)
 {
     m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
     
@@ -74,6 +79,34 @@ void Application::OnInit()
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     m_swapChain->GetDesc1(&swapChainDesc);
     m_imguiManager->Initialize(m_hwnd, m_device.Get(), m_commandQueue.Get(), SWAP_CHAIN_BUFFER_COUNT, swapChainDesc.Format);
+    
+    // Check DXR support
+    m_isDxrSupported = CheckRaytracingSupport();
+    
+    if (m_isDxrSupported)
+    {
+        // Initialize scene
+        m_scene->Initialize(m_device.Get());
+        
+        // Create acceleration structures
+        ThrowIfFailed(m_commandAllocators[0]->Reset());
+        ThrowIfFailed(m_commandList->Reset(m_commandAllocators[0].Get(), nullptr));
+        
+        m_scene->BuildAccelerationStructures(m_commandList.Get(), m_commandAllocators[0].Get(), m_commandQueue.Get());
+        
+        // Close command list after building
+        ThrowIfFailed(m_commandList->Close());
+        
+        // Initialize raytracing
+        m_raytracing->Initialize(m_device.Get(), m_width, m_height, SWAP_CHAIN_BUFFER_COUNT);
+        
+        OutputDebugStringA("DXR initialization completed. Acceleration structures and pipeline are ready.\n");
+    }
+    else
+    {
+        OutputDebugStringA("DXR is not supported.\n");
+        ExitProcess(1);
+    }
 }
 
 void Application::OnUpdate()
@@ -102,32 +135,47 @@ void Application::OnRender()
     m_commandList->RSSetViewports(1, &m_viewport);
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
-    // Indicate that the back buffer will be used as a render target
-    D3D12_RESOURCE_BARRIER barrier = {};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = m_renderTargets[m_currentBackBufferIndex].Get();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    m_commandList->ResourceBarrier(1, &barrier);
+    // Check if DXR is enabled and raytracing is initialized
+    if (m_isDxrSupported && m_raytracing && m_scene)
+    {
+        m_raytracing->UpdateDescriptorHeap(m_scene.get(), m_currentBackBufferIndex);
 
-    // Get the handle for the current render target view
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
-    rtvHandle.ptr += m_currentBackBufferIndex * m_rtvDescriptorSize;
+        // Perform raytracing
+        m_raytracing->Render(m_commandList.Get(), m_currentBackBufferIndex);
+        
+        // Copy raytracing output to render target
+        m_raytracing->CopyToRenderTarget(m_commandList.Get(), m_renderTargets[m_currentBackBufferIndex].Get());
+    }
+    else
+    {
+        // Fallback to clear color if raytracing is not available
+        // Indicate that the back buffer will be used as a render target
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        barrier.Transition.pResource = m_renderTargets[m_currentBackBufferIndex].Get();
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        m_commandList->ResourceBarrier(1, &barrier);
 
-    // Set the render target
-    m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+        // Get the handle for the current render target view
+        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+        rtvHandle.ptr += m_currentBackBufferIndex * m_rtvDescriptorSize;
 
-    // Animate clear color based on frame counter
-    float t = static_cast<float>(m_frameCounter) * 0.01f;
-    const float clearColor[] = {
-        0.5f + 0.5f * sinf(t),                    // Red channel
-        0.5f + 0.5f * sinf(t + 2.0f * 3.14159f / 3.0f),  // Green channel  
-        0.5f + 0.5f * sinf(t + 4.0f * 3.14159f / 3.0f),  // Blue channel
-        1.0f                                      // Alpha channel
-    };
-    m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+        // Set the render target
+        m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+        // Animate clear color based on frame counter
+        float t = static_cast<float>(m_frameCounter) * 0.01f;
+        const float clearColor[] = {
+            0.5f + 0.5f * sinf(t),                    // Red channel
+            0.5f + 0.5f * sinf(t + 2.0f * 3.14159f / 3.0f),  // Green channel  
+            0.5f + 0.5f * sinf(t + 4.0f * 3.14159f / 3.0f),  // Blue channel
+            1.0f                                      // Alpha channel
+        };
+        m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    }
     
     // Start ImGui frame
     m_imguiManager->BeginFrame();
@@ -154,11 +202,29 @@ void Application::OnRender()
     
     // End ImGui frame and render
     m_imguiManager->EndFrame();
+    
+    // Ensure render target is in correct state for ImGui rendering
+    if (m_isDxrSupported && m_raytracing && m_scene)
+    {
+        // Render target is already in RENDER_TARGET state after CopyToRenderTarget
+        // Get the handle for the current render target view
+        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+        rtvHandle.ptr += m_currentBackBufferIndex * m_rtvDescriptorSize;
+        
+        // Set the render target for ImGui
+        m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+    }
+    
     m_imguiManager->Render(m_commandList.Get());
     
     // Indicate that the back buffer will now be used to present
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = m_renderTargets[m_currentBackBufferIndex].Get();
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     m_commandList->ResourceBarrier(1, &barrier);
 
     // Close the command list
@@ -187,6 +253,15 @@ void Application::OnDestroy()
         m_fenceEvent = nullptr;
     }
 
+    // Reset raytracing
+    m_raytracing.reset();
+    
+    // Reset scene (which contains acceleration structures)
+    m_scene.reset();
+    
+    // Reset ImGui manager
+    m_imguiManager.reset();
+    
     // Reset all ComPtr objects
     m_commandList.Reset();
     m_fence.Reset();
@@ -775,6 +850,12 @@ void Application::ResizeSwapChain()
     
     // Recreate render target views
     CreateFrameResources();
+    
+    // Resize raytracing output if DXR is enabled
+    if (m_isDxrSupported && m_raytracing)
+    {
+        m_raytracing->Resize(width, height);
+    }
 }
 
 void Application::CleanupRenderTargets()
@@ -785,3 +866,19 @@ void Application::CleanupRenderTargets()
         m_renderTargets[i].Reset();
     }
 }
+
+bool Application::CheckRaytracingSupport()
+{
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
+    HRESULT hr = m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
+    
+    if (FAILED(hr) || options5.RaytracingTier < D3D12_RAYTRACING_TIER_1_0)
+    {
+        OutputDebugStringA("Raytracing is not supported on this device.\n");
+        return false;
+    }
+    
+    OutputDebugStringA("Raytracing is supported!\n");
+    return true;
+}
+

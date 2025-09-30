@@ -13,6 +13,8 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <directxmath.h>
+#include <dxcapi.h>
+
 
 // D3D12 helper headers
 #include <wrl/client.h>
@@ -22,6 +24,8 @@ using Microsoft::WRL::ComPtr;
 
 // Forward declarations
 class ImGuiManager;
+class Scene;
+class Raytracing;
 
 class Application
 {
@@ -92,11 +96,20 @@ protected:
     static const uint32_t SWAP_CHAIN_BUFFER_COUNT = 3;
     
     ComPtr<IDXGIFactory4> m_factory;
-    ComPtr<ID3D12Device> m_device;
+    ComPtr<ID3D12Device5> m_device;  // DXR capable device
     ComPtr<IDXGISwapChain3> m_swapChain;
     ComPtr<ID3D12CommandQueue> m_commandQueue;
     ComPtr<ID3D12CommandAllocator> m_commandAllocators[SWAP_CHAIN_BUFFER_COUNT];
-    ComPtr<ID3D12GraphicsCommandList> m_commandList;
+    ComPtr<ID3D12GraphicsCommandList4> m_commandList;  // DXR capable command list
+    
+    // Scene management
+    std::unique_ptr<Scene> m_scene;
+    
+    // Raytracing
+    std::unique_ptr<Raytracing> m_raytracing;
+    
+    // DXR support check
+    bool m_isDxrSupported;
     
     // Render targets
     ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
@@ -131,5 +144,8 @@ private:
     void MoveToNextFrame();
     void ResizeSwapChain();
     void CleanupRenderTargets();
+    
+    // DXR functions
+    bool CheckRaytracingSupport();
 };
 
