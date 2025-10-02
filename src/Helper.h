@@ -36,7 +36,7 @@ inline uint32_t AlignSize(uint32_t size, uint32_t alignment)
 }
 
 // Helper function to align size to given alignment (64-bit version)
-inline uint64_t AlignSize(uint64_t size, uint64_t alignment)
+inline uint64_t AlignSize(uint64_t size, uint32_t alignment)
 {
-    return (size + alignment - 1) & ~(alignment - 1);
+    return (size + static_cast<uint64_t>(alignment) - 1) & ~(static_cast<uint64_t>(alignment) - 1);
 }

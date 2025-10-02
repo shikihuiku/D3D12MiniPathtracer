@@ -60,13 +60,19 @@
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)thirdparty\microsoft.direct3d.d3d12.1.618.1\build\native\include;$(ProjectDir)src;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(OutDir)D3D12\" mkdir "$(OutDir)D3D12"
+xcopy /Y /D "$(ProjectDir)thirdparty\microsoft.direct3d.d3d12.1.618.1\build\native\bin\x64\D3D12Core.dll" "$(OutDir)D3D12\"
+xcopy /Y /D "$(ProjectDir)thirdparty\microsoft.direct3d.d3d12.1.618.1\build\native\bin\x64\d3d12SDKLayers.dll" "$(OutDir)D3D12\"</Command>
+      <Message>Copying Agility SDK DLLs...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -77,7 +83,7 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)thirdparty\microsoft.direct3d.d3d12.1.618.1\build\native\include;$(ProjectDir)src;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -86,6 +92,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;d3dcompiler.lib;dxguid.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(OutDir)D3D12\" mkdir "$(OutDir)D3D12"
+xcopy /Y /D "$(ProjectDir)thirdparty\microsoft.direct3d.d3d12.1.618.1\build\native\bin\x64\D3D12Core.dll" "$(OutDir)D3D12\"
+xcopy /Y /D "$(ProjectDir)thirdparty\microsoft.direct3d.d3d12.1.618.1\build\native\bin\x64\d3d12SDKLayers.dll" "$(OutDir)D3D12\"</Command>
+      <Message>Copying Agility SDK DLLs...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp" />
@@ -93,6 +105,7 @@
     <ClCompile Include="src\ImGuiManager.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Raytracing.cpp" />
+    <ClCompile Include="src\HeapManager.cpp" />
     <ClCompile Include="thirdparty\imgui\imgui.cpp" />
     <ClCompile Include="thirdparty\imgui\imgui_draw.cpp" />
     <ClCompile Include="thirdparty\imgui\imgui_tables.cpp" />
@@ -107,6 +120,7 @@
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\RaytracingHelpers.h" />
     <ClInclude Include="src\Raytracing.h" />
+    <ClInclude Include="src\HeapManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

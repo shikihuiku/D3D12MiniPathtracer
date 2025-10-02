@@ -1,8 +1,9 @@
-﻿{
+{
     "configurations": [
         {
             "name": "Win32",
             "includePath": [
+                "${workspaceFolder}/thirdparty/microsoft.direct3d.d3d12.1.618.1/build/native/include",
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/thirdparty/**"
             ],

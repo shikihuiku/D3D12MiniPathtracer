@@ -584,6 +584,18 @@ void Application::CreateDevice()
 
     // Set debug name for device
     m_device->SetName(L"Main D3D12 Device");
+
+    // Check GPU upload heap support (requires Agility SDK)
+    {
+        D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = {};
+        ThrowIfFailed(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, sizeof(options16)));
+        if (!options16.GPUUploadHeapSupported)
+        {
+            MessageBoxW(nullptr, L"GPU upload heap is not supported", L"Warning", MB_OK | MB_ICONWARNING);
+            m_isRunning = false;
+            return;
+        }
+    }
 }
 
 void Application::CreateCommandQueue()

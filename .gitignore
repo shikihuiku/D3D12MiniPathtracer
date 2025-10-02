@@ -431,3 +431,6 @@ ShaderCache/
 
 # ImGui ini file (user preferences)
 imgui.ini
+
+# D3D12 Agility SDK
+thirdparty/microsoft.direct3d.d3d12.*/

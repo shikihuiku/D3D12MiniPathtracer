@@ -423,7 +423,7 @@ void Raytracing::UpdateDescriptorHeap(Scene* scene, uint32_t frameIndex)
         srvDesc.Format = DXGI_FORMAT_UNKNOWN;
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.RaytracingAccelerationStructure.Location = scene->GetTLAS()->GetGPUVirtualAddress();
+        srvDesc.RaytracingAccelerationStructure.Location = scene->GetTLAS();
         m_device->CreateShaderResourceView(nullptr, &srvDesc, srvDescriptor);
     }
     
